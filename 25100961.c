@@ -24,6 +24,7 @@ typedef struct {
 	char texto[512];
 	int precedencia;
 	TipoNo tipo;
+	double valor;
 } NoInfixo;
 
 static int eh_token_numero(const char *token)
@@ -185,6 +186,27 @@ static int montar_no_binario(NoInfixo *resultado, const NoInfixo *esquerda, cons
 
 	resultado->precedencia = precedencia;
 	resultado->tipo = tipo;
+
+	if (strcmp(token, "+") == 0) {
+		resultado->valor = esquerda->valor + direita->valor;
+	} else if (strcmp(token, "-") == 0) {
+		resultado->valor = esquerda->valor - direita->valor;
+	} else if (strcmp(token, "*") == 0) {
+		resultado->valor = esquerda->valor * direita->valor;
+	} else if (strcmp(token, "/") == 0) {
+		if (direita->valor == 0.0) {
+			return 0;
+		}
+		resultado->valor = esquerda->valor / direita->valor;
+	} else if (strcmp(token, "%") == 0) {
+		if (direita->valor == 0.0) {
+			return 0;
+		}
+		resultado->valor = fmod(esquerda->valor, direita->valor);
+	} else if (strcmp(token, "^") == 0) {
+		resultado->valor = pow(esquerda->valor, direita->valor);
+	}
+
 	return 1;
 }
 
@@ -197,6 +219,25 @@ static int montar_no_unario(NoInfixo *resultado, const NoInfixo *operando, const
 
 	resultado->precedencia = 4;
 	resultado->tipo = NO_FUNCAO;
+
+	if (strcmp(token, "sen") == 0) {
+		resultado->valor = sin(para_radianos(operando->valor));
+	} else if (strcmp(token, "cos") == 0) {
+		resultado->valor = cos(para_radianos(operando->valor));
+	} else if (strcmp(token, "tg") == 0) {
+		resultado->valor = tan(para_radianos(operando->valor));
+	} else if (strcmp(token, "log") == 0) {
+		if (operando->valor <= 0.0) {
+			return 0;
+		}
+		resultado->valor = log10(operando->valor);
+	} else if (strcmp(token, "raiz") == 0) {
+		if (operando->valor < 0.0) {
+			return 0;
+		}
+		resultado->valor = sqrt(operando->valor);
+	}
+
 	return 1;
 }
 
@@ -221,6 +262,7 @@ static int posfixa_para_infixa(const char *expressao, char *saida)
 			snprintf(pilha[topo].texto, sizeof(pilha[topo].texto), "%s", tokens[indice]);
 			pilha[topo].precedencia = 5;
 			pilha[topo].tipo = NO_VALOR;
+			pilha[topo].valor = strtod(tokens[indice], NULL);
 			topo++;
 			continue;
 		}
